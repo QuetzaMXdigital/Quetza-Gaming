@@ -4,32 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quetza | Ecosistema</title>
-    <!-- Tailwind para el estilo Místico/Pro -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Cliente de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans flex items-center justify-center h-screen bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
     
     <div id="app-container" class="text-center w-full max-w-md px-4">
-        <!-- Aquí se inyectará el contenido dinámicamente -->
         <p class="text-gray-500 animate-pulse">Conectando al oráculo...</p>
     </div>
 
     <script>
-        // 🔴 ASEGÚRATE de poner aquí tu URL y tu llave ANON (Pública)
         const SUPABASE_URL = 'https://bhgnilcpdksfniishdzo.supabase.co';
-
-        // 1. PARTIMOS LA LLAVE PARA ENGAÑAR A GITHUB (Rellena la parte 2 con el resto de tu llave)
         const LLAVE_PARTE_1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZ25pbGNwZGtzZm5paXNoZHpvIiwicm9sZSI6In';
         const LLAVE_PARTE_2 = 'NlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYxMTczMywiZXhwIjoyMDk0MTg3NzMzfQ.E1pOAw9J-9tJwmFyusk-mFgNV0eK7uxBmwfarE_Gw9s'; 
         const SUPABASE_ANON_KEY = LLAVE_PARTE_1 + LLAVE_PARTE_2;
         
-        // Le llamamos "cliente" para no chocar con la librería
         const cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const appContainer = document.getElementById('app-container');
 
-        // 1. VERIFICAR SI EL USUARIO YA INICIÓ SESIÓN
         async function checkLogin() {
             try {
                 const { data: { user }, error } = await cliente.auth.getUser();
@@ -44,7 +36,6 @@
             }
         }
 
-        // 2. INTERFAZ DE LOGIN
         function mostrarPantallaLogin() {
             appContainer.innerHTML = `
                 <h1 class="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600 mb-4 tracking-tighter">QUETZA</h1>
@@ -58,19 +49,16 @@
             `;
         }
 
-        // 3. ACCIÓN DE INICIAR SESIÓN
         async function iniciarSesionGoogle() {
             await cliente.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.href // 🔴 Esto fuerza a regresar a la página pública
+                    redirectTo: window.location.href
                 }
             });
         }
 
-        // 4. INTERFAZ DEL PORTAFOLIO
         async function mostrarPortafolio(user) {
-            // Buscamos el saldo
             const { data, error } = await cliente
                 .from('user_wallets')
                 .select('balance')
@@ -95,9 +83,7 @@
                         <p class="text-xs text-gray-400 font-mono break-all">${user.id}</p>
                     </div>
 
-                    <!-- 🔥 BOTÓN PARA IR AL TRAGAMONEDAS 🔥 -->
                     <a href="maquinita.html" class="block w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-105 transition-transform duration-300 text-center mb-4">
-                        <img src="https://i.imgur.com/your-slot-machine-image.png" class="w-12 h-12 mx-auto mb-2">
                         🎰 Jugar Tragamonedas
                     </a>
 
@@ -106,13 +92,11 @@
             `;
         }
 
-        // 5. CERRAR SESIÓN
         async function cerrarSesion() {
             await cliente.auth.signOut();
             window.location.reload();
         }
 
-        // Arrancar la app
         window.onload = checkLogin;
     </script>
 </body>
