@@ -38,57 +38,51 @@ async function inicializarBancoEnPagina(onUsuarioListo) {
     const saldo = wallet ? wallet.balance : 0;
 
     // Inyectamos una barra superior estética automáticamente en tu HTML
-    const header = document.createElement('header');
-    header.className = "w-full max-w-5xl mx-auto flex justify-between items-center p-4 bg-gray-800/50 backdrop-blur-md rounded-xl border border-purple-500/20 mb-6";
-    header.innerHTML = `
-        <div class="flex items-center space-x-2">
-            <span class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500" style="color:#a855f7;">QUETZA</span>
-            <span class="text-xs bg-gray-900 px-2 py-1 rounded text-gray-400 font-mono">Wallet</span>
-        </div>
-        <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-400 hidden sm:inline" style="color:white;">${user.email}</span>
-            <div class="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
-                <span class="text-xs text-purple-400 font-bold mr-1">SALDO:</span>
-                <span id="nav-saldo-quetza" class="font-bold text-white">${saldo} QTZ</span>
+    // 🔥 PARCHE VISUAL: Solo inyectamos la barra del banco si NO estamos en la maquinita
+    if (!document.querySelector('.maquinita-container')) {
+        const header = document.createElement('header');
+        header.className = "w-full max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center p-4 bg-gray-800/50 backdrop-blur-md rounded-xl border border-purple-500/20 mb-6";
+        header.innerHTML = `
+            <div class="flex items-center space-x-2 mb-2 sm:mb-0">
+                <span class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500" style="color:#a855f7;">QUETZA</span>
+                <span class="text-xs bg-gray-900 px-2 py-1 rounded text-gray-400 font-mono">Wallet</span>
             </div>
-        </div>
-    `;
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-400" style="color:white;">${user.email}</span>
+                <div class="bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
+                    <span class="text-xs text-purple-400 font-bold mr-1">SALDO:</span>
+                    <span id="nav-saldo-quetza" class="font-bold text-white">${saldo} QTZ</span>
+                </div>
+            </div>
+        `;
+        document.body.insertBefore(header, document.body.firstChild);
+    }
+    // Función global que tus juegos llamarán para pagar o cobrar
+    async function modificarSaldoUsuario(userId, amount, tipoTransaccion, esIngreso) {
+        try {
+            const { data, error } = await cliente.rpc('procesar_transaccion_quetza', {
+                p_user_id: userId,
+                p_amount: amount,
+                p_tipo: tipoTransaccion,
+                p_es_ingreso: esIngreso
+            });
     
-    // Lo insertamos al principio del body del HTML actual
-    document.body.insertBefore(header, document.body.firstChild);
-
-    // Le devolvemos los datos del usuario al juego
-    if (onUsuarioListo) {
-        onUsuarioListo(user, saldo);
-    }
-}
-
-// Función global que tus juegos llamarán para pagar o cobrar
-async function modificarSaldoUsuario(userId, amount, tipoTransaccion, esIngreso) {
-    try {
-        const { data, error } = await cliente.rpc('procesar_transaccion_quetza', {
-            p_user_id: userId,
-            p_amount: amount,
-            p_tipo: tipoTransaccion,
-            p_es_ingreso: esIngreso
-        });
-
-        if (error) {
-            console.error("Error financiero:", error.message);
-            return { exito: false, mensaje: error.message };
+            if (error) {
+                console.error("Error financiero:", error.message);
+                return { exito: false, mensaje: error.message };
+            }
+            
+            // Actualizamos la barrita superior visualmente
+            let navSaldo = document.getElementById("nav-saldo-quetza");
+            if(navSaldo) navSaldo.innerText = `${data} QTZ`;
+    
+            return { exito: true, nuevoSaldo: data };
+            
+        } catch (err) {
+            console.error("Error de conexión con la bóveda:", err);
+            return { exito: false, mensaje: err.message };
         }
-        
-        // Actualizamos la barrita superior visualmente
-        let navSaldo = document.getElementById("nav-saldo-quetza");
-        if(navSaldo) navSaldo.innerText = `${data} QTZ`;
-
-        return { exito: true, nuevoSaldo: data };
-        
-    } catch (err) {
-        console.error("Error de conexión con la bóveda:", err);
-        return { exito: false, mensaje: err.message };
     }
-}
 
 // Lógica del botón Iniciar Sesión 
 document.addEventListener("DOMContentLoaded", () => {
