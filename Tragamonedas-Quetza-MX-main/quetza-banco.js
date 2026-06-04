@@ -2,7 +2,7 @@
 
 const SUPABASE_URL = 'https://bhgnilcpdksfniishdzo.supabase.co';
 
-// 1. PARTIMOS LA LLAVE PARA ENGAÑAR A GITHUB (Rellena la parte 2 con el resto de tu llave)
+// 1. PARTIMOS LA LLAVE PARA ENGAÑAR A GITHUB
 const LLAVE_PARTE_1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZ25pbGNwZGtzZm5paXNoZHpvIiwicm9sZSI6In';
 const LLAVE_PARTE_2 = 'NlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYxMTczMywiZXhwIjoyMDk0MTg3NzMzfQ.E1pOAw9J-9tJwmFyusk-mFgNV0eK7uxBmwfarE_Gw9s'; 
 const SUPABASE_ANON_KEY = LLAVE_PARTE_1 + LLAVE_PARTE_2;
@@ -14,18 +14,15 @@ async function inicializarBancoEnPagina(onUsuarioListo) {
     const { data: { user } } = await cliente.auth.getUser();
     
     if (!user) {
-        // 🔥 AQUÍ ESTABA EL ERROR DEL PARPADEO. YA LO ELIMINAMOS 🔥
         console.log("No hay sesión. Escondiendo juego y mostrando Login...");
         
-        // Escondemos la maquinita
         let maquinita = document.getElementById("maquinita-principal");
         if(maquinita) maquinita.style.display = "none";
         
-        // Mostramos el modal de Login
         let modalLogin = document.getElementById("modal-login");
         if(modalLogin) modalLogin.style.display = "flex";
         
-        return; // Detenemos la función para que no haya parpadeo
+        return; 
     }
 
     // Buscamos su billetera
@@ -37,7 +34,6 @@ async function inicializarBancoEnPagina(onUsuarioListo) {
 
     const saldo = wallet ? wallet.balance : 0;
 
-    // Inyectamos una barra superior estética automáticamente en tu HTML
     // 🔥 PARCHE VISUAL: Solo inyectamos la barra del banco si NO estamos en la maquinita
     if (!document.querySelector('.maquinita-container')) {
         const header = document.createElement('header');
@@ -57,43 +53,48 @@ async function inicializarBancoEnPagina(onUsuarioListo) {
         `;
         document.body.insertBefore(header, document.body.firstChild);
     }
-    // Función global que tus juegos llamarán para pagar o cobrar
-    async function modificarSaldoUsuario(userId, amount, tipoTransaccion, esIngreso) {
-        try {
-            const { data, error } = await cliente.rpc('procesar_transaccion_quetza', {
-                p_user_id: userId,
-                p_amount: amount,
-                p_tipo: tipoTransaccion,
-                p_es_ingreso: esIngreso
-            });
-    
-            if (error) {
-                console.error("Error financiero:", error.message);
-                return { exito: false, mensaje: error.message };
-            }
-            
-            // Actualizamos la barrita superior visualmente
-            let navSaldo = document.getElementById("nav-saldo-quetza");
-            if(navSaldo) navSaldo.innerText = `${data} QTZ`;
-    
-            return { exito: true, nuevoSaldo: data };
-            
-        } catch (err) {
-            console.error("Error de conexión con la bóveda:", err);
-            return { exito: false, mensaje: err.message };
-        }
+
+    // Le devolvemos los datos del usuario al juego
+    if (onUsuarioListo) {
+        onUsuarioListo(user, saldo);
     }
+}
+
+// Función global que tus juegos llamarán para pagar o cobrar
+async function modificarSaldoUsuario(userId, amount, tipoTransaccion, esIngreso) {
+    try {
+        const { data, error } = await cliente.rpc('procesar_transaccion_quetza', {
+            p_user_id: userId,
+            p_amount: amount,
+            p_tipo: tipoTransaccion,
+            p_es_ingreso: esIngreso
+        });
+
+        if (error) {
+            console.error("Error financiero:", error.message);
+            return { exito: false, mensaje: error.message };
+        }
+        
+        // Actualizamos la barrita superior visualmente (si existe en esa página)
+        let navSaldo = document.getElementById("nav-saldo-quetza");
+        if(navSaldo) navSaldo.innerText = `${data} QTZ`;
+
+        return { exito: true, nuevoSaldo: data };
+        
+    } catch (err) {
+        console.error("Error de conexión con la bóveda:", err);
+        return { exito: false, mensaje: err.message };
+    }
+}
 
 // Lógica del botón Iniciar Sesión 
 document.addEventListener("DOMContentLoaded", () => {
     let btnLogin = document.getElementById("btn-iniciar-sesion");
     if(btnLogin) {
         btnLogin.addEventListener("click", async () => {
-            // Usamos Google y le FORZAMOS la ruta de regreso exacta
             const { error } = await cliente.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    // Esto lee automáticamente si estás en tu compu o en GitHub y te regresa ahí mismo
                     redirectTo: window.location.origin + window.location.pathname
                 }
             });
