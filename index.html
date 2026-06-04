@@ -69,6 +69,7 @@
         }
 
         // 4. INTERFAZ DEL PORTAFOLIO
+        <!-- Reemplaza tu función mostrarPortafolio por esta -->
         async function mostrarPortafolio(user) {
             // Buscamos el saldo
             const { data, error } = await cliente
@@ -95,7 +96,13 @@
                         <p class="text-xs text-gray-400 font-mono break-all">${user.id}</p>
                     </div>
 
-                    <button onclick="cerrarSesion()" class="text-red-400/80 text-sm hover:text-red-400 font-semibold transition-colors">Desconectar Billetera</button>
+                    <!-- 🔥 BOTÓN PARA IR AL TRAGAMONEDAS 🔥 -->
+                    <a href="maquinita.html" class="block w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-105 transition-transform duration-300 text-center mb-4">
+                        <img src="https://i.imgur.com/your-slot-machine-image.png" class="w-12 h-12 mx-auto mb-2">
+                        🎰 Jugar Tragamonedas
+                    </a>
+
+                    <button onclick="cerrarSesion()" class="text-red-400/80 text-sm hover:text-red-400 font-semibold transition-colors w-full mt-2">Desconectar Billetera</button>
                 </div>
             `;
         }
