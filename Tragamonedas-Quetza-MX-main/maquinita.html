@@ -74,32 +74,37 @@
     <audio id="audio-cobrar" src="cobrar.mp3"></audio>
 
    <script>
-        var usuarioLogueado = null;
-        var saldoDisponible = 0;
+        // 1. Candado de seguridad: Forzamos las variables a la memoria global
+        window.usuarioLogueado = null;
+        window.saldoDisponible = 0;
 
         window.onload = () => {
-            // Llamamos al banco
+            console.log("1. Llamando al banco...");
             inicializarBancoEnPagina((user, saldo) => {
-                // Guardamos los datos reales
-                usuarioLogueado = user;
-                saldoDisponible = saldo;
                 
-                // 🔥 ESTA ES LA LÍNEA QUE FALTABA: Hacemos visible el juego 🔥
+                // 2. Guardamos los datos reales
+                window.usuarioLogueado = user;
+                window.saldoDisponible = saldo;
+                
+                // 3. Encendemos la máquina
                 let maquinita = document.getElementById('maquinita-principal');
                 if (maquinita) {
                     maquinita.style.display = "block";
                 }
                 
-                // Actualizamos los números en los botones
+                // 4. Forzamos la actualización de los botones
                 if (typeof actualizarPantallas === 'function') {
                     actualizarPantallas();
+                    console.log("2. Pantallas actualizadas con éxito.");
+                } else {
+                    console.error("ALERTA: script.js no se cargó correctamente.");
                 }
                 
-                console.log("¡Dinero cargado en la máquina! Saldo:", saldoDisponible);
+                console.log("3. ¡Todo listo! Saldo inyectado:", window.saldoDisponible);
             });
         };
     </script>
 
-    <script src="script.js?v=21"></script>
+    <script src="script.js?v=25"></script>
 </body>
 </html>
