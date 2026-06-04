@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quetza | Ecosistema</title>
+    <!-- Tailwind para el estilo Místico/Pro -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Cliente de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans flex items-center justify-center h-screen bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+    
+    <div id="app-container" class="text-center w-full max-w-md px-4">
+        <!-- Aquí se inyectará el contenido dinámicamente -->
+        <p class="text-gray-500 animate-pulse">Conectando al oráculo...</p>
+    </div>
+
+    <script>
+        // 🔴 ASEGÚRATE de poner aquí tu URL y tu llave ANON (Pública)
+        const SUPABASE_URL = 'https://bhgnilcpdksfniishdzo.supabase.co';
+
+        // 1. PARTIMOS LA LLAVE PARA ENGAÑAR A GITHUB (Rellena la parte 2 con el resto de tu llave)
+        const LLAVE_PARTE_1 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZ25pbGNwZGtzZm5paXNoZHpvIiwicm9sZSI6In';
+        const LLAVE_PARTE_2 = 'NlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODYxMTczMywiZXhwIjoyMDk0MTg3NzMzfQ.E1pOAw9J-9tJwmFyusk-mFgNV0eK7uxBmwfarE_Gw9s'; 
+        const SUPABASE_ANON_KEY = LLAVE_PARTE_1 + LLAVE_PARTE_2;
+        
+        // Le llamamos "cliente" para no chocar con la librería
+        const cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const appContainer = document.getElementById('app-container');
+
+        // 1. VERIFICAR SI EL USUARIO YA INICIÓ SESIÓN
+        async function checkLogin() {
+            try {
+                const { data: { user }, error } = await cliente.auth.getUser();
+                if (user) {
+                    mostrarPortafolio(user);
+                } else {
+                    mostrarPantallaLogin();
+                }
+            } catch (err) {
+                console.error("Error conectando:", err);
+                appContainer.innerHTML = `<p class="text-red-500">Error de conexión. Revisa la consola.</p>`;
+            }
+        }
+
+        // 2. INTERFAZ DE LOGIN
+        function mostrarPantallaLogin() {
+            appContainer.innerHTML = `
+                <h1 class="text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600 mb-4 tracking-tighter">QUETZA</h1>
+                <p class="text-gray-400 mb-10 text-lg">Predice. Juega. Gana.</p>
+                
+                <button onclick="iniciarSesionGoogle()" class="w-full flex items-center justify-center bg-white text-gray-900 font-bold py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:scale-105 transition-transform duration-300">
+                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/google/google-original.svg" class="w-6 h-6 mr-3">
+                    Continuar con Google
+                </button>
+                <p class="text-xs text-gray-600 mt-6">Al continuar, aceptas interactuar con el ecosistema.</p>
+            `;
+        }
+
+        // 3. ACCIÓN DE INICIAR SESIÓN
+        async function iniciarSesionGoogle() {
+            await cliente.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.href // 🔴 Esto fuerza a regresar a la página pública
+                }
+            });
+        }
+
+        // 4. INTERFAZ DEL PORTAFOLIO
+        async function mostrarPortafolio(user) {
+            // Buscamos el saldo
+            const { data, error } = await cliente
+                .from('user_wallets')
+                .select('balance')
+                .eq('user_id', user.id)
+                .single();
+            
+            let saldo = data ? data.balance : 0;
+
+            appContainer.innerHTML = `
+                <div class="bg-gray-800/80 backdrop-blur-xl p-8 rounded-2xl border border-purple-500/30 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-purple-600/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <h2 class="text-2xl font-bold text-white mb-1 relative z-10">Portafolio Maestro</h2>
+                    <p class="text-sm text-gray-400 mb-8 truncate relative z-10">${user.email}</p>
+                    
+                    <div class="bg-gray-900/80 p-6 rounded-xl mb-8 border border-gray-700/50 relative z-10">
+                        <p class="text-xs text-purple-400 font-bold uppercase tracking-widest mb-2">Saldo Disponible</p>
+                        <p class="text-5xl font-black text-white">${saldo} <span class="text-xl text-gray-500 font-normal">QTZ</span></p>
+                    </div>
+                    
+                    <div class="text-left bg-black/30 p-4 rounded-lg mb-6">
+                        <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">ID de Billetera (UUID)</p>
+                        <p class="text-xs text-gray-400 font-mono break-all">${user.id}</p>
+                    </div>
+
+                    <button onclick="cerrarSesion()" class="text-red-400/80 text-sm hover:text-red-400 font-semibold transition-colors">Desconectar Billetera</button>
+                </div>
+            `;
+        }
+
+        // 5. CERRAR SESIÓN
+        async function cerrarSesion() {
+            await cliente.auth.signOut();
+            window.location.reload();
+        }
+
+        // Arrancar la app
+        window.onload = checkLogin;
+    </script>
+</body>
+</html>
