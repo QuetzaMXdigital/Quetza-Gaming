@@ -75,21 +75,35 @@
 
     <script src="script.js?v=12"></script>
 
-    <script>
-       window.onload = () => {
+   <script>
+        var usuarioLogueado = null;
+        var saldoDisponible = 0;
+
+        window.onload = () => {
             // Llamamos al banco
             inicializarBancoEnPagina((user, saldo) => {
+                // Guardamos los datos reales
+                usuarioLogueado = user;
+                saldoDisponible = saldo;
                 
-                // Sobrescribimos el saldo
-                saldoGlobal = saldo; 
-                document.getElementById('saldo-global').innerText = saldoGlobal;
+                // 🔥 ESTA ES LA LÍNEA QUE FALTABA: Hacemos visible el juego 🔥
+                let maquinita = document.getElementById('maquinita-principal');
+                if (maquinita) {
+                    maquinita.style.display = "block";
+                }
                 
-                // 🔥 LA MAGIA: Aparecemos la maquinita porque el banco ya nos dio luz verde 🔥
-                document.getElementById('maquinita-principal').style.display = "block";
+                // Actualizamos los números en los botones
+                if (typeof actualizarPantallas === 'function') {
+                    actualizarPantallas();
+                }
                 
-                console.log("¡Jugador autorizado! Billetera cargada con éxito.");
+                console.log("¡Dinero cargado en la máquina! Saldo:", saldoDisponible);
             });
         };
     </script>
+
+    <script src="script.js?v=21"></script>
+</body>
+</html>
 </body>
 </html>
