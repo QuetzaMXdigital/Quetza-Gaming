@@ -1,8 +1,7 @@
 // ==========================================
 // 1. CONFIGURACIÓN Y ECONOMÍA GLOBAL
 // ==========================================
-// 🔴 ELIMINAMOS saldoGlobal = 5000; 
-// Ahora el juego usa 'saldoDisponible' que viene directamente del banco.
+// Eliminamos variables de saldo locales, ahora todo se lee de la Billetera (window.saldoDisponible)
 let pozoDeLaCasa = 100000;
 let ultimoPremio = 0;
 let enJuego = false;
@@ -84,8 +83,8 @@ for(let i=0; i<24; i++) {
 // 4. LÓGICA DE APUESTAS Y PANTALLAS
 // ==========================================
 function actualizarPantallas() {
-    // 🟢 Usamos saldoDisponible en lugar de saldoGlobal
-    document.getElementById("saldo-global").innerText = typeof saldoDisponible !== 'undefined' ? saldoDisponible : 0;
+    // 🟢 FORZAMOS la lectura desde la ventana global (window)
+    document.getElementById("saldo-global").innerText = window.saldoDisponible || 0;
     document.getElementById("premio").innerText = ultimoPremio;
     let total = 0;
     Object.keys(apuestas).forEach(f => {
@@ -102,8 +101,8 @@ window.ajustarApuesta = function(fruta, cantidad) {
     if (nueva >= 0) {
         let costoTotal = Object.values(apuestas).reduce((a,b)=>a+b, 0) - apuestas[fruta] + nueva;
         
-        // 🟢 Validamos contra el saldo real del banco
-        if (costoTotal <= saldoDisponible) {
+        // 🟢 Validamos contra el saldo real global
+        if (costoTotal <= window.saldoDisponible) {
             apuestas[fruta] = nueva;
             reproducir(sonidoMoneda);
         } else {
@@ -113,33 +112,38 @@ window.ajustarApuesta = function(fruta, cantidad) {
     actualizarPantallas();
 };
 
-actualizarPantallas();
+// No llamamos actualizarPantallas() aquí todavía, esperamos a que quetza-banco.js lo llame.
 
 // ==========================================
 // 5. MOTOR DEL JUEGO (COBRO AL BANCO Y GIRAR)
 // ==========================================
-// 🟢 Agregamos 'async' para poder conectarnos a Supabase
 document.getElementById("btn-jugar").addEventListener("click", async () => {
     let totalMesa = Object.values(apuestas).reduce((a, b) => a + b, 0);
     
     if (enJuego || totalMesa === 0) return;
     
-    // Verificación final de saldo
-    if (saldoDisponible < totalMesa) {
+    // 🟢 SEGURIDAD: Comprobar que el usuario sí se conectó
+    if (!window.usuarioLogueado) {
+        alert("Sesión no detectada. Por favor, regresa a la Wallet e inicia sesión.");
+        return;
+    }
+
+    // 🟢 Verificación final de saldo global
+    if (window.saldoDisponible < totalMesa) {
         alert("No tienes suficientes Quetza Coins en tu billetera.");
         return;
     }
 
-    // 🟢 1. COBRO OFICIAL EN LA BASE DE DATOS ANTES DE GIRAR
-    const transaccion = await modificarSaldoUsuario(usuarioLogueado.id, totalMesa, 'apuesta_tragamonedas', false);
+    // 1. COBRO OFICIAL EN LA BASE DE DATOS ANTES DE GIRAR
+    const transaccion = await modificarSaldoUsuario(window.usuarioLogueado.id, totalMesa, 'apuesta_tragamonedas', false);
     
     if (!transaccion.exito) {
         alert("Error procesando tu apuesta en el banco: " + transaccion.mensaje);
         return; // Detenemos el giro si el banco falló
     }
 
-    // 2. ACTUALIZACIÓN VISUAL (El banco ya cobró el dinero)
-    saldoDisponible -= totalMesa;
+    // 2. ACTUALIZACIÓN VISUAL (Descontamos del saldo global)
+    window.saldoDisponible -= totalMesa;
     pozoDeLaCasa += totalMesa;
     ultimoPremio = 0;
     enJuego = true;
@@ -189,7 +193,6 @@ document.getElementById("btn-jugar").addEventListener("click", async () => {
 // ==========================================
 // 6. RESULTADO Y PAGO DE PREMIOS (BÓVEDA)
 // ==========================================
-// 🟢 Transformamos a 'async' para depositar las ganancias
 async function finalizar(idGanador) {
     let fruta = mapaTablero[idGanador];
     let gano = false;
@@ -199,12 +202,12 @@ async function finalizar(idGanador) {
         premioCalculado = apuestas[fruta] * catalogo[fruta].multi;
         
         // 🟢 DEPÓSITO OFICIAL DESDE LA BÓVEDA A LA BILLETERA
-        const pago = await modificarSaldoUsuario(usuarioLogueado.id, premioCalculado, 'premio_tragamonedas', true);
+        const pago = await modificarSaldoUsuario(window.usuarioLogueado.id, premioCalculado, 'premio_tragamonedas', true);
         
         if (pago.exito) {
             ultimoPremio = premioCalculado;
             pozoDeLaCasa -= ultimoPremio;
-            saldoDisponible += ultimoPremio; // Sumamos al saldo real
+            window.saldoDisponible += ultimoPremio; // 🟢 Sumamos al saldo real global
             gano = true;
             reproducir(sonidoPremio);
         } else {
